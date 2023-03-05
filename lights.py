@@ -124,7 +124,7 @@ def send_rgb(rgb_values, start_index=0):
 
 def noise_effect(frame: "cv2.Mat", value: float) -> "np.ndarray":
     noise_shape = frame.shape[:2]
-    if value < 0.95:
+    if value < 0.83:
         return sp_noise_mask(noise_shape, value / 3)
     else:
         return np.ones(noise_shape, np.int8)
