@@ -40,6 +40,20 @@ class KnobReader:
         self.waiting = False
         self.last_values = retval
         return retval
+    
+    # this function takes an input between 0 and 2.8, and outputs a value between 0 and 1, with 1 being 2.8V and 0 being 0.05V
+    @staticmethod
+    def voltage_to_value(voltage: float) -> float:
+        voltage = voltage * 3.3/(65535)
+        if voltage > 2.8:
+            voltage = 2.8
+        if voltage < 0.05:
+            voltage = 0.05
+        return (voltage - 0.05) / 2.75
+
+    def get_knob_values(self) -> tuple[float, float]:
+        return tuple(map(self.__class__.voltage_to_value, self.read()))
+
 
 
 if os.path.exists('/dev/ttyACM0'):
@@ -80,19 +94,6 @@ server_port = 21324
 server = (server_address, server_port)
 # this is the protocol # for the dnrgb protocol
 DNRGB_PROTOCOL_VALUE = 4
-
-
-# this function takes an input between 0 and 2.8, and outputs a value between 0 and 1, with 1 being 2.8V and 0 being 0.05V
-def voltage_to_value(voltage: float) -> float:
-    voltage = voltage * 3.3/(65535)
-    if voltage > 2.8:
-        voltage = 2.8
-    if voltage < 0.05:
-        voltage = 0.05
-    return (voltage - 0.05) / 2.75
-
-def get_knob_values(knob_reader) -> tuple[float, float]:
-    return tuple(map(voltage_to_value, knob_reader.read()))
 
 def sp_noise_mask(shape: tuple[int, int], prob):
     mask = np.zeros(shape, np.int8)
@@ -203,7 +204,7 @@ def start_cam(x, y):
         frame = frame.astype(np.uint8)
 
         if knob_reader is not None:
-            knob1, knob2 = get_knob_values(knob_reader)
+            knob1, knob2 = knob_reader.get_knob_values()
 
             noise = noise_effect(frame, knob1)
             frame = hue_effect(frame, noise, knob2)
