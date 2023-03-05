@@ -143,7 +143,9 @@ def hue_effect(frame, noise: "np.ndarray", value: float) -> "cv2.Mat":
         hue = (value - HUE_THRESHOLD) / (RAINBOW_THRESHOLD - HUE_THRESHOLD)
         high = hue_to_rgb(round(hue * 255))
     else:
-        hue = round(time.monotonic() * 30) / 30
+        CYCLE_TIME = 10
+        cycle_position = (time.monotonic() / CYCLE_TIME) % 1
+        hue = cycle_position
         high = hue_to_rgb(round(hue * 255))
 
     frame[noise == -1] = low
@@ -167,7 +169,6 @@ def start_cam(x, y):
     frame_count = 0
     #start counting time
     start_time = time.time()
-    reverse = False
     while True:
         #if framecount is 60, set it to 0 and print the time it took
         frame_count += 1
@@ -213,10 +214,9 @@ def start_cam(x, y):
             frame[:, :FRAME_WIDTH] = RING_LIGHT_VALUE
             frame[:, -FRAME_WIDTH:] = RING_LIGHT_VALUE
 
-        reverse ^= reverse
-        send_quadrant(frame, reverse)
+        send_quadrant(frame)
 
-def send_quadrant(frame: "cv2.Mat", reverse: bool):
+def send_quadrant(frame: "cv2.Mat"):
     DIM = 42
     QUADRANT_SIZE = (DIM // 2) ** 2
     [[q1, q2], [q3, q4]] = [np.split(half, 2, axis=1) for half in np.split(frame, 2)]
@@ -225,9 +225,6 @@ def send_quadrant(frame: "cv2.Mat", reverse: bool):
         q[1::2, :] = q[1::2, ::-1]
     quadrants = [q.flatten() for q in quadrants]
     quadrants = [(q, i * QUADRANT_SIZE) for i, q in enumerate(quadrants)]
-
-    if reverse:
-        quadrants.reverse()
     
     for q, pos in quadrants:
         send_rgb(q, pos)
