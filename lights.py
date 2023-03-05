@@ -9,7 +9,7 @@ import os
 print("Application started")
 
 
-#this defines the class for the knob, allowing for voltage to be read from it. 
+# this defines the class for the knob, allowing for voltage to be read from it. 
 class KnobReader:
     def __init__(self, initial_value, ser):
         self.ser = ser
@@ -49,13 +49,13 @@ if os.path.exists('/dev/ttyACM0'):
 
     ser = serial.Serial('/dev/ttyACM0', 115200)
     
-    #initializes knob
+    # initializes knob
     knob_reader = KnobReader(initial_value=0, ser=ser)
 else:
     knob_reader = None
     print("no serial detected, knobs will NOT be read")
 
-#gamma correction
+# gamma correction
 gamma = np.array([0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
@@ -73,16 +73,16 @@ gamma = np.array([0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
   177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
   215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255])
 
-#this sets up network things for communication to the ESP32
+# this sets up network things for communication to the ESP32
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server_address = '4.3.2.1'
 server_port = 21324
 server = (server_address, server_port)
-#this is the protocol # for the dnrgb protocol
+# this is the protocol # for the dnrgb protocol
 DNRGB_PROTOCOL_VALUE = 4
 
 
-#this function takes an input between 0 and 2.8, and outputs a value between 0 and 1, with 1 being 2.8V and 0 being 0.05V
+# this function takes an input between 0 and 2.8, and outputs a value between 0 and 1, with 1 being 2.8V and 0 being 0.05V
 def voltage_to_value(voltage: float) -> float:
     voltage = voltage * 3.3/(65535)
     if voltage > 2.8:
@@ -108,7 +108,7 @@ def sp_noise_mask(shape: tuple[int, int], prob):
                 mask[i, j] = 0
     return mask
 
-#this function creates the header for the dnrgb protocol
+# this function creates the header for the dnrgb protocol
 def dnrgb_header(wait_time: int, start_index: int) -> bytes:
     if wait_time > 255:
         raise ValueError("Wait time must be within 0-255")
@@ -152,9 +152,8 @@ def hue_effect(frame, noise: "np.ndarray", value: float) -> "cv2.Mat":
     frame[noise == 1] = high
     return frame
 
-#this function takes a camera snapshot, compresses it, adds effects to it, and sends it to the esp32
+# this function takes a camera snapshot, compresses it, adds effects to it, and sends it to the esp32
 def start_cam(x, y):
-    # Start the webcam
     webcam = cv2.VideoCapture(0)
     webcam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
@@ -164,23 +163,17 @@ def start_cam(x, y):
     webcam.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
     webcam.set(cv2.CAP_PROP_FOCUS, 170)
 
-
-    # Loop 45 times per second
     frame_count = 0
-    #start counting time
     start_time = time.time()
     while True:
-        #if framecount is 60, set it to 0 and print the time it took
         frame_count += 1
         if frame_count == 60:
             frame_count = 0
             print("frame time for 60:",time.time() - start_time)
             start_time = time.time()
-        # Capture a frame from the webcam
+
         ret, frame = webcam.read()
-        #print size and dimnesions of frame using numpy
         
-        # Resize the frame to 16x16
         frame = cv2.resize(frame, (x, y))
 
         frame = cv2.LUT(frame, gamma)
@@ -229,5 +222,4 @@ def send_quadrant(frame: "cv2.Mat"):
     for q, pos in quadrants:
         send_rgb(q, pos)
 
-#start the code
-start_cam(42,42)
+start_cam(42, 42)
