@@ -129,6 +129,9 @@ def noise_effect(frame: "cv2.Mat", value: float) -> "np.ndarray":
     else:
         return np.ones(noise_shape, np.int8)
 
+def hue_to_rgb(hue: int):
+    return cv2.cvtColor(np.expand_dims(np.array([hue, 255, 255], np.uint8), axis=(0, 1)), cv2.COLOR_HSV2RGB)[0, 0]
+
 def hue_effect(frame, noise: "np.ndarray", value: float) -> "cv2.Mat":
     HUE_THRESHOLD = 0.1
     RAINBOW_THRESHOLD = 0.9
@@ -138,10 +141,10 @@ def hue_effect(frame, noise: "np.ndarray", value: float) -> "cv2.Mat":
         high = 255
     elif value < RAINBOW_THRESHOLD:
         hue = (value - HUE_THRESHOLD) / (RAINBOW_THRESHOLD - HUE_THRESHOLD)
-        high = hue * 255
+        high = hue_to_rgb(round(hue * 255))
     else:
         hue = round(time.monotonic() * 30) / 30
-        high = hue * 255
+        high = hue_to_rgb(round(hue * 255))
 
     frame[noise == -1] = low
     frame[noise == 1] = high
