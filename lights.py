@@ -172,7 +172,14 @@ def start_cam(x, y):
             print("frame time for 60:",time.time() - start_time)
             start_time = time.time()
 
+        frame: "cv2.Mat"
         ret, frame = webcam.read()
+
+        h, w, _ = frame.shape
+        assert w > h
+        diff = w - h
+        edge = diff // 2
+        frame = frame[:, edge:-edge, :]
         
         frame = cv2.resize(frame, (x, y))
 
