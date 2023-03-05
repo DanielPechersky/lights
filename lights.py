@@ -52,8 +52,8 @@ if os.path.exists('/dev/ttyACM0'):
     #initializes knob
     knob_reader = KnobReader(initial_value=0, ser=ser)
 else:
-    print("no serial detected")
-    #raise "no serial??"
+    knob_reader = None
+    print("no serial detected, knobs will NOT be read")
 
 #gamma correction
 gamma = np.array([0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -91,27 +91,33 @@ def voltage_to_value(voltage: float) -> float:
         voltage = 0.05
     return (voltage - 0.05) / 2.75
 
-def get_knob_values() -> tuple[float, float]:
+def get_knob_values(knob_reader) -> tuple[float, float]:
     return tuple(map(voltage_to_value, knob_reader.read()))
 
+def sp_noise_mask(shape: tuple[int, int], prob):
+    mask = np.zeros(shape, np.int8)
+    thres = 1 - prob 
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            rdn = random.random()
+            if rdn < prob:
+                mask[i, j] = -1
+            elif rdn > thres:
+                mask[i, j] = 1
+            else:
+                mask[i, j] = 0
+    return mask
+
 #adds salt and pepper noise to an image
-def sp_noise(image,prob):
+def sp_noise(image: "cv2.Mat", prob: float):
     '''
     Add salt and pepper noise to image
     prob: Probability of the noise
     '''
-    output = np.zeros(image.shape,np.uint8)
-    thres = 1 - prob 
-    for i in range(image.shape[0]):
-        for j in range(image.shape[1]):
-            rdn = random.random()
-            if rdn < prob:
-                output[i][j] = 0
-            elif rdn > thres:
-                output[i][j] = 255
-            else:
-                output[i][j] = image[i][j]
-    return output
+    output = sp_noise_mask(image.shape, prob)
+    image[output == -1].fill(0)
+    image[output == 1].fill(255)
+    return image
 
 
 #this function creates the header for the dnrgb protocol
@@ -126,20 +132,52 @@ def dnrgb_header(wait_time: int, start_index: int) -> bytes:
 def send_rgb(rgb_values, start_index=0):
     byte_string = dnrgb_header(5, start_index) + bytes(rgb_values)
     #print("Header + Package",byte_string)
+    print(len(bytes(rgb_values)))
 
     sent = sock.sendto(byte_string, server)
-    #print("Sent " + str(sent) + " bytes to " + str(server))
+    # print("Sent " + str(sent) + " bytes to " + str(server))
 
 #this padds the list of RGB values so the total length of the list is 1467
 def function_padder(rgb_values):
     rgb_values = rgb_values + [50] * (1467 - len(rgb_values))
     return rgb_values
 
+def noise_effect(frame: "cv2.Mat", value: float) -> "np.ndarray[np.int8, np.dtype[np.generic]]":
+    if value < 0.95:
+        return sp_noise_mask(frame.shape, value / 3)
+    else:
+        return np.ones(frame.shape, np.int8)
+
+def hue_effect(frame, noise: "np.ndarray[np.int8, np.dtype[np.generic]]", value: float) -> "cv2.Mat":
+    HUE_THRESHOLD = 0.1
+    RAINBOW_THRESHOLD = 0.9
+
+    low = 0
+    if value < HUE_THRESHOLD:
+        high = 255
+    elif value < RAINBOW_THRESHOLD:
+        hue = (value - HUE_THRESHOLD) / (RAINBOW_THRESHOLD - HUE_THRESHOLD)
+        high = hue * 255
+    else:
+        hue = round(time.monotonic() * 30) / 30
+        high = hue * 255
+
+    frame[noise == -1].fill(low)
+    frame[noise == 1].fill(high)
+    return frame
+
 #this function takes a camera snapshot, compresses it, adds effects to it, and sends it to the esp32
 def start_cam(x, y):
     # Start the webcam
     webcam = cv2.VideoCapture(0)
-    webcam.set(cv2.CAP_PROP_BRIGHTNESS, 1000)
+    # webcam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    # webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+    # webcam.set(cv2.CAP_PROP_BRIGHTNESS, 140)
+    # webcam.set(cv2.CAP_PROP_GAIN, 40)
+
+    # webcam.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
+    # webcam.set(cv2.CAP_PROP_FOCUS, 170)
+
 
     # Loop 45 times per second
     frame_count = 0
@@ -161,15 +199,11 @@ def start_cam(x, y):
 
         frame = cv2.LUT(frame, gamma)
 
-        knob1, knob2 = get_knob_values()
+        # if knob_reader is not None:
+        #     knob1, knob2 = get_knob_values(knob_reader)
 
-        #apply SP_Noise effect
-        frame = sp_noise(frame, knob1 / 3)
-
-        #apply desaturation effect
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
-        frame[:,:,1] = frame[:,:,1] * knob2
-        frame = cv2.cvtColor(frame, cv2.COLOR_HSV2BGR)
+        #     noise = noise_effect(frame, knob1)
+        #     frame = hue_effect(frame, noise, knob2)
 
         # Get input orientation
         orientation = 3
