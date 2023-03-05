@@ -108,18 +108,6 @@ def sp_noise_mask(shape: tuple[int, int], prob):
                 mask[i, j] = 0
     return mask
 
-#adds salt and pepper noise to an image
-def sp_noise(image: "cv2.Mat", prob: float):
-    '''
-    Add salt and pepper noise to image
-    prob: Probability of the noise
-    '''
-    output = sp_noise_mask(image.shape, prob)
-    image[output == -1].fill(0)
-    image[output == 1].fill(255)
-    return image
-
-
 #this function creates the header for the dnrgb protocol
 def dnrgb_header(wait_time: int, start_index: int) -> bytes:
     if wait_time > 255:
@@ -136,11 +124,6 @@ def send_rgb(rgb_values, start_index=0):
 
     sent = sock.sendto(byte_string, server)
     # print("Sent " + str(sent) + " bytes to " + str(server))
-
-#this padds the list of RGB values so the total length of the list is 1467
-def function_padder(rgb_values):
-    rgb_values = rgb_values + [50] * (1467 - len(rgb_values))
-    return rgb_values
 
 def noise_effect(frame: "cv2.Mat", value: float) -> "np.ndarray":
     if value < 0.95:
@@ -228,15 +211,9 @@ def start_cam(x, y):
             frame[:, :FRAME_WIDTH] = RING_LIGHT_VALUE
             frame[:, -FRAME_WIDTH:] = RING_LIGHT_VALUE
 
-        # #flatten frame using numpy
-        # frame = frame.flatten()
+        send_quadrant(frame)
 
-        # order = not order
-        # #rgb_out = average_pixels(rgb_out)
-        # temp_send(frame, x,y, order)
-        temp_send_quadrant(frame)
-
-def temp_send_quadrant(frame: "cv2.Mat"):
+def send_quadrant(frame: "cv2.Mat"):
     DIM = 42
     QUADRANT_SIZE = (DIM // 2) ** 2
     [[q1, q2], [q3, q4]] = [np.split(half, 2, axis=1) for half in np.split(frame, 2)]
@@ -244,35 +221,6 @@ def temp_send_quadrant(frame: "cv2.Mat"):
     for i, q in enumerate([q1, q2, q3, q4]):
         q[1::2, :] = q[1::2, ::-1]
         send_rgb(q.flatten(), i * QUADRANT_SIZE)
-
-#this function takes an input array of rgb values, and the dimensions of the array, and splits it into 4 equal arrays, then padds them to ensure they fit the packet length
-def split_rgb(rgb_values):
-    rgb_values1 = rgb_values[0:1467]
-    rgb_values2 = rgb_values[1467:2934]
-    rgb_values3 = rgb_values[2934:4401]
-    rgb_values4 = rgb_values[4401:5292]
-    return rgb_values1, rgb_values2, rgb_values3, rgb_values4
-
-#temp sending function
-def temp_send(rgb_values, order):
-
-
-    rgb_values1, rgb_values2, rgb_values3, rgb_values4 = split_rgb(rgb_values)
-    
-    if (order):
-
-
-        send_rgb(rgb_values1, 0)
-        send_rgb(rgb_values2, 489)
-        send_rgb(rgb_values3, 978)
-        send_rgb(rgb_values4, 1467)
-
-    else: 
-        send_rgb(rgb_values4, 1467)
-        send_rgb(rgb_values3, 978)
-        send_rgb(rgb_values2, 489)
-        send_rgb(rgb_values1, 0)
-
 
 #start the code
 start_cam(42,42)
