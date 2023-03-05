@@ -142,13 +142,13 @@ def function_padder(rgb_values):
     rgb_values = rgb_values + [50] * (1467 - len(rgb_values))
     return rgb_values
 
-def noise_effect(frame: "cv2.Mat", value: float) -> "np.ndarray[np.int8, np.dtype[np.generic]]":
+def noise_effect(frame: "cv2.Mat", value: float) -> "np.ndarray":
     if value < 0.95:
         return sp_noise_mask(frame.shape, value / 3)
     else:
-        return np.ones(frame.shape, np.int8)
+        return np.ones(frame.shape, np.uint8)
 
-def hue_effect(frame, noise: "np.ndarray[np.int8, np.dtype[np.generic]]", value: float) -> "cv2.Mat":
+def hue_effect(frame, noise: "np.ndarray", value: float) -> "cv2.Mat":
     HUE_THRESHOLD = 0.1
     RAINBOW_THRESHOLD = 0.9
 
@@ -170,13 +170,13 @@ def hue_effect(frame, noise: "np.ndarray[np.int8, np.dtype[np.generic]]", value:
 def start_cam(x, y):
     # Start the webcam
     webcam = cv2.VideoCapture(0)
-    # webcam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    # webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
-    # webcam.set(cv2.CAP_PROP_BRIGHTNESS, 140)
-    # webcam.set(cv2.CAP_PROP_GAIN, 40)
+    webcam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+    webcam.set(cv2.CAP_PROP_BRIGHTNESS, 140)
+    webcam.set(cv2.CAP_PROP_GAIN, 40)
 
-    # webcam.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
-    # webcam.set(cv2.CAP_PROP_FOCUS, 170)
+    webcam.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
+    webcam.set(cv2.CAP_PROP_FOCUS, 170)
 
 
     # Loop 45 times per second
@@ -199,11 +199,13 @@ def start_cam(x, y):
 
         frame = cv2.LUT(frame, gamma)
 
-        # if knob_reader is not None:
-        #     knob1, knob2 = get_knob_values(knob_reader)
+        frame = frame.astype(np.uint8)
 
-        #     noise = noise_effect(frame, knob1)
-        #     frame = hue_effect(frame, noise, knob2)
+        if knob_reader is not None:
+            knob1, knob2 = get_knob_values(knob_reader)
+
+            noise = noise_effect(frame, knob1)
+            frame = hue_effect(frame, noise, knob2)
 
         # Get input orientation
         orientation = 3
