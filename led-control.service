@@ -1,0 +1,11 @@
+[Unit]
+Description=Connect and control LEDs
+
+[Service]
+User=root
+ExecStart=sh -c 'nmcli device wifi connect WLED-AP password wledshortpass363 && python3 /home/pi/lights.py'
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target
