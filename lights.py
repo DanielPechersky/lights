@@ -193,8 +193,10 @@ def start_cam(x, y):
 
         frame = crop_square(frame)
         frame = zoom(frame)
-        
+
         frame = cv2.resize(frame, (x, y))
+
+        frame[:, :, :] = frame[:, ::-1, :]
 
         frame = cv2.LUT(frame, gamma)
 
