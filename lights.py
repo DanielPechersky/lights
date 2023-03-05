@@ -12,10 +12,11 @@ class KnobReader:
     This defines the class for the knob, allowing for voltage to be read from it.
     """
 
-    def __init__(self, initial_value, ser):
+    def __init__(self, initial_value, ser: "serial.Serial"):
         self.ser = ser
         self.last_values = (initial_value, initial_value)
         self.waiting = False
+        self.buffer = [(initial_value, initial_value)] * 10
 
     def read(self):
         # Haven't sent a read command: send one and return hold value.
@@ -42,6 +43,12 @@ class KnobReader:
         self.last_values = retval
         return retval
 
+    def buffered_read(self) -> tuple[int, int]:
+        result = self.read()
+        self.buffer.pop()
+        self.buffer.insert(0, result)
+        return tuple(m // len(self.buffer) for m in map(sum, zip(*self.buffer)))
+
     @staticmethod
     def voltage_to_value(voltage: float) -> float:
         """
@@ -56,7 +63,7 @@ class KnobReader:
         return (voltage - 0.05) / 2.75
 
     def get_knob_values(self) -> tuple[float, float]:
-        return tuple(map(self.__class__.voltage_to_value, self.read()))
+        return tuple(map(self.__class__.voltage_to_value, self.buffered_read()))
 
 
 # gamma correction
