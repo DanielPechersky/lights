@@ -212,10 +212,13 @@ def start_cam(x, y):
 def send_quadrant(frame: "cv2.Mat"):
     DIM = 42
     QUADRANT_SIZE = (DIM // 2) ** 2
+
     [[q1, q2], [q3, q4]] = [np.split(half, 2, axis=1) for half in np.split(frame, 2)]
     quadrants = [q1, q2, q3, q4]
+
     for q in quadrants:
         q[1::2, :] = q[1::2, ::-1]
+
     quadrants = [q.flatten() for q in quadrants]
     quadrants = [(q, i * QUADRANT_SIZE) for i, q in enumerate(quadrants)]
     
