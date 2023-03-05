@@ -152,6 +152,22 @@ def hue_effect(frame, noise: "np.ndarray", value: float) -> "cv2.Mat":
     frame[noise == 1] = high
     return frame
 
+def crop_square(frame: "cv2.Mat") -> "cv2.Mat":
+    h, w, _ = frame.shape
+    assert w > h
+    diff = w - h
+    edge = diff // 2
+    frame = frame[:, edge:-edge, :]
+    h, w, _ = frame.shape
+    assert h == w
+    return frame
+
+def zoom(frame: "cv2.Mat") -> "cv2.Mat":
+    l, _, _ = frame.shape
+    l_final = round(l / 1.3)
+    to_remove = l - l_final
+    return frame[to_remove:, (to_remove // 2):-(to_remove // 2), :]
+
 # this function takes a camera snapshot, compresses it, adds effects to it, and sends it to the esp32
 def start_cam(x, y):
     webcam = cv2.VideoCapture(0)
@@ -175,11 +191,8 @@ def start_cam(x, y):
         frame: "cv2.Mat"
         ret, frame = webcam.read()
 
-        h, w, _ = frame.shape
-        assert w > h
-        diff = w - h
-        edge = diff // 2
-        frame = frame[:, edge:-edge, :]
+        frame = crop_square(frame)
+        frame = zoom(frame)
         
         frame = cv2.resize(frame, (x, y))
 
