@@ -9,8 +9,11 @@ import os
 print("Application started")
 
 
-# this defines the class for the knob, allowing for voltage to be read from it. 
 class KnobReader:
+    """
+    This defines the class for the knob, allowing for voltage to be read from it.
+    """
+
     def __init__(self, initial_value, ser):
         self.ser = ser
         self.last_values = (initial_value, initial_value)
@@ -27,7 +30,7 @@ class KnobReader:
         # If not enough bytes are ready, return the hold value.
         if self.ser.in_waiting < 12:
             return self.last_values
-        
+
         line = self.ser.readline()
 
         try:
@@ -40,10 +43,13 @@ class KnobReader:
         self.waiting = False
         self.last_values = retval
         return retval
-    
-    # this function takes an input between 0 and 2.8, and outputs a value between 0 and 1, with 1 being 2.8V and 0 being 0.05V
+
     @staticmethod
     def voltage_to_value(voltage: float) -> float:
+        """
+        This function takes an input between 0 and 2.8, and outputs a value between 0 and 1, with 1 being 2.8V and 0 being 0.05V
+        """
+
         voltage = voltage * 3.3/(65535)
         if voltage > 2.8:
             voltage = 2.8
@@ -55,14 +61,13 @@ class KnobReader:
         return tuple(map(self.__class__.voltage_to_value, self.read()))
 
 
-
 if os.path.exists('/dev/ttyACM0'):
     import serial
     ser = serial.Serial('/dev/ttyACM0', 115200)
     time.sleep(0.001)
 
     ser = serial.Serial('/dev/ttyACM0', 115200)
-    
+
     # initializes knob
     knob_reader = KnobReader(initial_value=0, ser=ser)
 else:
@@ -70,22 +75,24 @@ else:
     print("no serial detected, knobs will NOT be read")
 
 # gamma correction
-gamma = np.array([0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+gamma = np.array([
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
     2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,  5,  5,
     5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10,
-   10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
-   17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
-   25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
-   37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
-   51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
-   69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
-   90, 92, 93, 95, 96, 98, 99,101,102,104,105,107,109,110,112,114,
-  115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
-  144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
-  177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
-  215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255])
+    10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
+    17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
+    25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
+    37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
+    51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+    69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
+    90, 92, 93, 95, 96, 98, 99, 101, 102, 104, 105, 107, 109, 110, 112, 114,
+    115, 117, 119, 120, 122, 124, 126, 127, 129, 131, 133, 135, 137, 138, 140, 142,
+    144, 146, 148, 150, 152, 154, 156, 158, 160, 162, 164, 167, 169, 171, 173, 175,
+    177, 180, 182, 184, 186, 189, 191, 193, 196, 198, 200, 203, 205, 208, 210, 213,
+    215, 218, 220, 223, 225, 228, 231, 233, 236, 239, 241, 244, 247, 249, 252, 255
+])
 
 # this sets up network things for communication to the ESP32
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -95,9 +102,10 @@ server = (server_address, server_port)
 # this is the protocol # for the dnrgb protocol
 DNRGB_PROTOCOL_VALUE = 4
 
+
 def sp_noise_mask(shape: tuple[int, int], prob):
     mask = np.zeros(shape, np.int8)
-    thres = 1 - prob 
+    thres = 1 - prob
     for i in range(shape[0]):
         for j in range(shape[1]):
             rdn = random.random()
@@ -109,19 +117,28 @@ def sp_noise_mask(shape: tuple[int, int], prob):
                 mask[i, j] = 0
     return mask
 
-# this function creates the header for the dnrgb protocol
+
 def dnrgb_header(wait_time: int, start_index: int) -> bytes:
+    """
+    This function creates the header for the dnrgb protocol
+    """
+
     if wait_time > 255:
         raise ValueError("Wait time must be within 0-255")
     if start_index > 2**16 - 1:
         raise ValueError("Start index must be a nonnegative 16-bit number")
     return struct.pack(">BBH", DNRGB_PROTOCOL_VALUE, wait_time, start_index)
 
-#this function sends the rgb values to the esp32
+
 def send_rgb(rgb_values, start_index=0):
+    """
+    This function sends the rgb values to the esp32
+    """
+
     byte_string = dnrgb_header(5, start_index) + bytes(rgb_values)
 
     sock.sendto(byte_string, server)
+
 
 def noise_effect(frame: "cv2.Mat", value: float) -> "np.ndarray":
     noise_shape = frame.shape[:2]
@@ -130,8 +147,10 @@ def noise_effect(frame: "cv2.Mat", value: float) -> "np.ndarray":
     else:
         return np.ones(noise_shape, np.int8)
 
+
 def hue_to_rgb(hue: int):
     return cv2.cvtColor(np.expand_dims(np.array([hue, 255, 255], np.uint8), axis=(0, 1)), cv2.COLOR_HSV2RGB)[0, 0]
+
 
 def hue_effect(frame, noise: "np.ndarray", value: float) -> "cv2.Mat":
     HUE_THRESHOLD = 0.1
@@ -153,6 +172,7 @@ def hue_effect(frame, noise: "np.ndarray", value: float) -> "cv2.Mat":
     frame[noise == 1] = high
     return frame
 
+
 def crop_square(frame: "cv2.Mat") -> "cv2.Mat":
     h, w, _ = frame.shape
     assert w > h
@@ -163,14 +183,19 @@ def crop_square(frame: "cv2.Mat") -> "cv2.Mat":
     assert h == w
     return frame
 
+
 def zoom(frame: "cv2.Mat") -> "cv2.Mat":
     l, _, _ = frame.shape
     l_final = round(l / 1.3)
     to_remove = l - l_final
     return frame[to_remove:, (to_remove // 2):-(to_remove // 2), :]
 
-# this function takes a camera snapshot, compresses it, adds effects to it, and sends it to the esp32
+
 def start_cam(x, y):
+    """
+    This function takes a camera snapshot, compresses it, adds effects to it, and sends it to the esp32
+    """
+
     webcam = cv2.VideoCapture(0)
     webcam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
@@ -186,7 +211,7 @@ def start_cam(x, y):
         frame_count += 1
         if frame_count == 60:
             frame_count = 0
-            print("frame time for 60:",time.time() - start_time)
+            print("frame time for 60:", time.time() - start_time)
             start_time = time.time()
 
         frame: "cv2.Mat"
@@ -211,6 +236,7 @@ def start_cam(x, y):
 
         # Get input orientation
         orientation = 3
+
         # Rotate the frame by 90 degrees based on user input
         if orientation == 1:
             frame = np.rot90(frame)
@@ -232,11 +258,14 @@ def start_cam(x, y):
 
         send_quadrant(frame)
 
+
 def send_quadrant(frame: "cv2.Mat"):
     DIM = 42
     QUADRANT_SIZE = (DIM // 2) ** 2
 
-    [[q1, q2], [q3, q4]] = [np.split(half, 2, axis=1) for half in np.split(frame, 2)]
+    [[q1, q2], [q3, q4]] = [
+        np.split(half, 2, axis=1) for half in np.split(frame, 2)
+    ]
     quadrants = [q1, q2, q3, q4]
 
     for q in quadrants:
@@ -244,8 +273,9 @@ def send_quadrant(frame: "cv2.Mat"):
 
     quadrants = [q.flatten() for q in quadrants]
     quadrants = [(q, i * QUADRANT_SIZE) for i, q in enumerate(quadrants)]
-    
+
     for q, pos in quadrants:
         send_rgb(q, pos)
+
 
 start_cam(42, 42)
