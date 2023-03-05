@@ -123,10 +123,11 @@ def send_rgb(rgb_values, start_index=0):
     sock.sendto(byte_string, server)
 
 def noise_effect(frame: "cv2.Mat", value: float) -> "np.ndarray":
+    noise_shape = frame.shape[:2]
     if value < 0.95:
-        return sp_noise_mask(frame.shape, value / 3)
+        return sp_noise_mask(noise_shape, value / 3)
     else:
-        return np.ones(frame.shape, np.uint8)
+        return np.ones(noise_shape, np.int8)
 
 def hue_effect(frame, noise: "np.ndarray", value: float) -> "cv2.Mat":
     HUE_THRESHOLD = 0.1
@@ -142,8 +143,8 @@ def hue_effect(frame, noise: "np.ndarray", value: float) -> "cv2.Mat":
         hue = round(time.monotonic() * 30) / 30
         high = hue * 255
 
-    frame[noise == -1].fill(low)
-    frame[noise == 1].fill(high)
+    frame[noise == -1] = low
+    frame[noise == 1] = high
     return frame
 
 #this function takes a camera snapshot, compresses it, adds effects to it, and sends it to the esp32
