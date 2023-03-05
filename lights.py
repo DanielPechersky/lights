@@ -6,8 +6,6 @@ import cv2
 import random
 import os
 
-print("Application started")
-
 
 class KnobReader:
     """
@@ -61,21 +59,8 @@ class KnobReader:
         return tuple(map(self.__class__.voltage_to_value, self.read()))
 
 
-if os.path.exists('/dev/ttyACM0'):
-    import serial
-    ser = serial.Serial('/dev/ttyACM0', 115200)
-    time.sleep(0.001)
-
-    ser = serial.Serial('/dev/ttyACM0', 115200)
-
-    # initializes knob
-    knob_reader = KnobReader(initial_value=0, ser=ser)
-else:
-    knob_reader = None
-    print("no serial detected, knobs will NOT be read")
-
 # gamma correction
-gamma = np.array([
+GAMMA = np.array([
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
@@ -93,14 +78,6 @@ gamma = np.array([
     177, 180, 182, 184, 186, 189, 191, 193, 196, 198, 200, 203, 205, 208, 210, 213,
     215, 218, 220, 223, 225, 228, 231, 233, 236, 239, 241, 244, 247, 249, 252, 255
 ])
-
-# this sets up network things for communication to the ESP32
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_address = '4.3.2.1'
-server_port = 21324
-server = (server_address, server_port)
-# this is the protocol # for the dnrgb protocol
-DNRGB_PROTOCOL_VALUE = 4
 
 
 def sp_noise_mask(shape: tuple[int, int], prob):
@@ -224,7 +201,7 @@ def start_cam(x, y):
 
         frame[:, :, :] = frame[:, ::-1, :]
 
-        frame = cv2.LUT(frame, gamma)
+        frame = cv2.LUT(frame, GAMMA)
 
         frame = frame.astype(np.uint8)
 
@@ -278,4 +255,27 @@ def send_quadrant(frame: "cv2.Mat"):
         send_rgb(q, pos)
 
 
-start_cam(42, 42)
+if __name__ == "__main__":
+    if os.path.exists('/dev/ttyACM0'):
+        import serial
+        ser = serial.Serial('/dev/ttyACM0', 115200)
+        time.sleep(0.001)
+
+        ser = serial.Serial('/dev/ttyACM0', 115200)
+
+        # initializes knob
+        knob_reader = KnobReader(initial_value=0, ser=ser)
+    else:
+        knob_reader = None
+        print("no serial detected, knobs will NOT be read")
+
+    # this sets up network things for communication to the ESP32
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    server_address = '4.3.2.1'
+    server_port = 21324
+    server = (server_address, server_port)
+    # this is the protocol # for the dnrgb protocol
+    DNRGB_PROTOCOL_VALUE = 4
+
+    print("Application started")
+    start_cam(42, 42)
