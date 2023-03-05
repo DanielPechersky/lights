@@ -119,11 +119,8 @@ def dnrgb_header(wait_time: int, start_index: int) -> bytes:
 #this function sends the rgb values to the esp32
 def send_rgb(rgb_values, start_index=0):
     byte_string = dnrgb_header(5, start_index) + bytes(rgb_values)
-    #print("Header + Package",byte_string)
-    print(len(bytes(rgb_values)))
 
-    sent = sock.sendto(byte_string, server)
-    # print("Sent " + str(sent) + " bytes to " + str(server))
+    sock.sendto(byte_string, server)
 
 def noise_effect(frame: "cv2.Mat", value: float) -> "np.ndarray":
     if value < 0.95:
