@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+scp led-control.service ledpi:/etc/systemd/system/led-control.service
+ssh ledpi 'sudo systemctl daemon-reload'

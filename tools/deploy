@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+scp lights.py ledpi:/home/pi/lights.py
+ssh ledpi 'sudo systemctl restart led-control'

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+ssh ledpi 'journalctl -f -u led-control'
