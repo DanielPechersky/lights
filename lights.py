@@ -55,7 +55,7 @@ class KnobReader:
         This function takes an input between 0 and 2.8, and outputs a value between 0 and 1, with 1 being 2.8V and 0 being 0.05V
         """
 
-        voltage = voltage * 3.3/(65535)
+        voltage = voltage * 3.3 / (65535)
         if voltage > 2.8:
             voltage = 2.8
         if voltage < 0.05:
@@ -67,6 +67,7 @@ class KnobReader:
 
 
 # gamma correction
+# fmt: off
 GAMMA = np.array([
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
@@ -85,6 +86,7 @@ GAMMA = np.array([
     177, 180, 182, 184, 186, 189, 191, 193, 196, 198, 200, 203, 205, 208, 210, 213,
     215, 218, 220, 223, 225, 228, 231, 233, 236, 239, 241, 244, 247, 249, 252, 255
 ])
+# fmt: on
 
 
 def sp_noise_mask(shape: tuple[int, int], prob):
@@ -133,7 +135,10 @@ def noise_effect(frame: "cv2.Mat", value: float) -> "np.ndarray":
 
 
 def hue_to_rgb(hue: int):
-    return cv2.cvtColor(np.expand_dims(np.array([hue, 255, 255], np.uint8), axis=(0, 1)), cv2.COLOR_HSV2RGB)[0, 0]
+    return cv2.cvtColor(
+        np.expand_dims(np.array([hue, 255, 255], np.uint8), axis=(0, 1)),
+        cv2.COLOR_HSV2RGB,
+    )[0, 0]
 
 
 def hue_effect(frame, noise: "np.ndarray", value: float) -> "cv2.Mat":
@@ -172,7 +177,7 @@ def zoom(frame: "cv2.Mat") -> "cv2.Mat":
     l, _, _ = frame.shape
     l_final = round(l / 1.3)
     to_remove = l - l_final
-    return frame[to_remove:, (to_remove // 2):-(to_remove // 2), :]
+    return frame[to_remove:, (to_remove // 2) : -(to_remove // 2), :]
 
 
 def start_cam(x, y):
@@ -247,9 +252,7 @@ def send_quadrant(frame: "cv2.Mat"):
     DIM = 42
     QUADRANT_SIZE = (DIM // 2) ** 2
 
-    [[q1, q2], [q3, q4]] = [
-        np.split(half, 2, axis=1) for half in np.split(frame, 2)
-    ]
+    [[q1, q2], [q3, q4]] = [np.split(half, 2, axis=1) for half in np.split(frame, 2)]
     quadrants = [q1, q2, q3, q4]
 
     for q in quadrants:
@@ -263,12 +266,13 @@ def send_quadrant(frame: "cv2.Mat"):
 
 
 if __name__ == "__main__":
-    if os.path.exists('/dev/ttyACM0'):
+    if os.path.exists("/dev/ttyACM0"):
         import serial
-        ser = serial.Serial('/dev/ttyACM0', 115200)
+
+        ser = serial.Serial("/dev/ttyACM0", 115200)
         time.sleep(0.001)
 
-        ser = serial.Serial('/dev/ttyACM0', 115200)
+        ser = serial.Serial("/dev/ttyACM0", 115200)
 
         # initializes knob
         knob_reader = KnobReader(initial_value=0, ser=ser)
@@ -278,7 +282,7 @@ if __name__ == "__main__":
 
     # this sets up network things for communication to the ESP32
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_address = '4.3.2.1'
+    server_address = "4.3.2.1"
     server_port = 21324
     server = (server_address, server_port)
     # this is the protocol # for the dnrgb protocol
