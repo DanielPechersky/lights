@@ -249,7 +249,6 @@ def start_cam(x, y):
 
 
 def send_quadrant(frame: "cv2.Mat"):
-    DIM = 42
     QUADRANT_LEADING_LEDS = [1, 1, 1, 1]
 
     [[q1, q2], [q3, q4]] = [np.split(half, 2, axis=1) for half in np.split(frame, 2)]
