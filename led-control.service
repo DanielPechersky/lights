@@ -3,7 +3,8 @@ Description=Connect and control LEDs
 
 [Service]
 User=root
-ExecStart=sh -c 'nmcli device wifi connect WLED-AP password wledshortpass363 && python3 /home/pi/lights.py'
+EnvironmentFile=/home/pi/config.env
+ExecStart=sh -c "nmcli device wifi connect ${WLED_WIFI_SSID} password ${WLED_WIFI_PASSWORD} && python3 /home/pi/lights.py"
 Restart=on-failure
 RestartSec=2s
 
