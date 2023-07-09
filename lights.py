@@ -250,18 +250,26 @@ def start_cam(x, y):
 
 def send_quadrant(frame: "cv2.Mat"):
     DIM = 42
-    QUADRANT_SIZE = (DIM // 2) ** 2
+    QUADRANT_LEADING_LEDS = [1, 1, 1, 1]
 
     [[q1, q2], [q3, q4]] = [np.split(half, 2, axis=1) for half in np.split(frame, 2)]
-    quadrants = [q1, q2, q3, q4]
+    quadrants: list["np.ndarray"] = [q1, q2, q3, q4]
 
     for q in quadrants:
         q[1::2, :] = q[1::2, ::-1]
 
-    quadrants = [q.flatten() for q in quadrants]
-    quadrants = [(q, i * QUADRANT_SIZE) for i, q in enumerate(quadrants)]
+    quadrants = [q.reshape(-1, *q.shape[2:]) for q in quadrants]
 
-    for q, pos in quadrants:
+    quadrants = [
+        np.pad(q, ((n_leading, 0), (0, 0)), constant_values=0)
+        for (n_leading, q) in zip(QUADRANT_LEADING_LEDS, quadrants)
+    ]
+
+    positions = [0] + np.cumsum([q.shape[0] for q in quadrants[:-1]]).tolist()
+
+    quadrants = [q.flatten() for q in quadrants]
+
+    for q, pos in zip(quadrants, positions):
         send_rgb(q, pos)
 
 
